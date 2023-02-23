@@ -1,7 +1,6 @@
 import requests
 import json
 import datetime
-import csv
 
 # Set the API endpoint and the time range for which to retrieve calendar data
 api_endpoint = "https://graph.microsoft.com/v1.0/me/calendarview"
@@ -13,6 +12,9 @@ headers = {
     "Authorization": "Bearer <YOUR_ACCESS_TOKEN_HERE>",
     "Content-Type": "application/json"
 }
+
+# Set the ID of the target SharePoint list
+list_id = "<YOUR_LIST_ID_HERE>"
 
 # Iterate through each month in the time range
 while start_date <= end_date:
@@ -58,14 +60,18 @@ while start_date <= end_date:
                     num_optional_meetings += 1
                     total_optional_time += duration
     
-    # Write the summary to a CSV file for the current month
-    with open(f'meeting_summary_{year}_{month}.csv', mode='w', newline='') as csvfile:
-        fieldnames = ['Total Meetings', 'Required Meetings', 'Optional Meetings', 'Total Required Time (hrs)', 'Total Optional Time (hrs)']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-        writer.writeheader()
-        writer.writerow({'Total Meetings': num_meetings,
-                         'Required Meetings': num_required_meetings,
-                         'Optional Meetings': num_optional_meetings,
-                         'Total Required Time (hrs)': round(total_required_time / 3600, 2),
-                         'Total Optional Time (hrs)': round(total_optional_time / 3600, 2)})
+    # Construct the item payload for the current month
+    item_payload = {
+        "fields": {
+            "Title": f"Meeting Summary {year}/{month}",
+            "Total Meetings": num_meetings,
+            "Required Meetings": num_required_meetings,
+            "Optional Meetings": num_optional_meetings,
+            "Total Required Time (hrs)": round(total_required_time / 3600, 2),
+            "Total Optional Time (hrs)": round(total_optional_time / 3600, 2)
+        }
+    }
+    
+    # Send a POST request to create the item in the target list
+    create_item_url = f"https://graph.microsoft.com/v1.0/sites/root/lists/{list_id}/items"
+    create_item_response = requests.post(create_item_url, headers=headers, json
